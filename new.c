@@ -26,9 +26,16 @@ int client;
 
 void initHostWifi()
 {
+    // I actually don't know what this command does
     system("wpa_cli ter");
+
+    // Kills host daemon
     system("killall hostapd");
+
+    // Supply wpa_supplicant with config
     system("wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant-wlan0.conf");
+    
+    // Initialize wifi
     system("/usr/bin/python /usr/bin/wifi_configurator.py");
     printf("host wifi initialized\n");
 }
