@@ -20,7 +20,7 @@
  */
 
 struct hostent *host_ent;
-struct sockaddr_in server;
+struct sockaddr_in host;
 struct sockaddr_in dest;
 
 void initHostWifi() {
@@ -31,15 +31,33 @@ void initHostWifi() {
     printf("host wifi initialized\n");
 }
 
+int netSocket, client;
+
+
 void initHost() {
+    
+    initHostWifi();
+    
     int netSocket = socket(AF_INET, SOCK_STREAM, 0);
     struct hostent *serverStruct = gethostbyname("192.168.125.1");
 
-    server.sin_family = AF_INET;
-    server.sin_port = htons(8001);
-    bcopy((char *)serverStruct->h_addr, (char *)&server.sin_addr.s_addr, serverStruct->h_length); //assigns an ip address to listen on
+    host.sin_family = AF_INET;
+    host.sin_port = htons(8001);
+    bcopy((char *)serverStruct->h_addr, (char *)&host.sin_addr.s_addr, serverStruct->h_length);
 
-    bind(netSocket, (struct sockaddr *)&server, sizeof(struct sockaddr));
+    bind(netSocket, (struct sockaddr *)&host, sizeof(struct sockaddr));
+    printf("Initialized Socket Connection");
+    
+    listen(netSocket, 1);
+    printf("Started Listening on port 8001");
+    
+    client = accept(netSocket, (struct sockaddr *)&dest, &size);
+    if (client == -1) {
+        printf("Socket Connection Failed");   
+    }
+    printf("Socket Connection Success");
+    
+    
 }
 
 void connectWifi() {
