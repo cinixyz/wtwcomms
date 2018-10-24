@@ -19,6 +19,15 @@
  * Notes              : 
  */
 
+
+/* 
+function call sequence:
+HOST    initHost();
+CLIENT  connectWifi();
+CLIENT  initSocket();
+
+
+*/
 struct hostent *host_ent;
 struct sockaddr_in host;
 struct sockaddr_in dest;
@@ -57,7 +66,7 @@ void initHost() {
     }
     printf("Socket Connection Success");
     
-    
+    listener = thread_create(listenData);
 }
 
 void connectWifi() {
@@ -87,7 +96,7 @@ void connectWifi() {
 }
 
 void initSocket() {
-
+    listener = thread_create(listenData);
     /********************* THIS IS FOR CLIENT *********************/
     struct hostent *serverStruct;
     int netSocket;
@@ -107,8 +116,17 @@ void initSocket() {
     
 }
 
-void listenSocket() {
+void listenSocket()
+{
     /*********************THIS IS FOR HOST*********************/
+    listen(netSocket, 5);
+    if ((client_fd = accept(socket_fd, (struct sockaddr *)&dest, &size)) == -1) {
+        printf("connection accept fail");
+    }
+    
+    //start data listening thread
+    thread_start(listenerThread);
+
 }
 
 int main() {
