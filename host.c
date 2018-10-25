@@ -25,12 +25,18 @@ function call sequence:
 HOST    initHost();
 CLIENT  connectWifi();
 CLIENT  initSocket();
+HOST    sendData();
+CLIENT  listenData();
 
 
 */
 struct hostent *host_ent;
 struct sockaddr_in host;
 struct sockaddr_in dest;
+int hostSocket, clientSocket;
+int data;
+socklen_t size = sizeof(struct sockaddr_in);
+thread listener;
 
 void initHostWifi() {
     system("wpa_cli ter");
@@ -40,28 +46,36 @@ void initHostWifi() {
     printf("host wifi initialized\n");
 }
 
-int netSocket, client;
-
+void listenData() {
+    while (1) {
+        int received = recv(hostSocket, (int *)data, 999, 0);
+        if (received == 0 && received == -1) {
+            printf("error receiving socket data");
+        } else {
+            printf("read data: %i", data);
+        } // error handling
+    }
+};
 
 void initHost() {
     
     initHostWifi();
     
-    int netSocket = socket(AF_INET, SOCK_STREAM, 0);
+    int hostSocket = socket(AF_INET, SOCK_STREAM, 0);
     struct hostent *serverStruct = gethostbyname("192.168.125.1");
 
     host.sin_family = AF_INET;
     host.sin_port = htons(8001);
     bcopy((char *)serverStruct->h_addr, (char *)&host.sin_addr.s_addr, serverStruct->h_length);
 
-    bind(netSocket, (struct sockaddr *)&host, sizeof(struct sockaddr));
+    bind(hostSocket, (struct sockaddr *)&host, sizeof(struct sockaddr));
     printf("Initialized Socket Connection");
     
-    listen(netSocket, 1);
+    listen(hostSocket, 1);
     printf("Started Listening on port 8001");
     
-    client = accept(netSocket, (struct sockaddr *)&dest, &size);
-    if (client == -1) {
+    clientSocket = accept(hostSocket, (struct sockaddr *)&dest, &size);
+    if (clientSocket == -1) {
         printf("Socket Connection Failed");   
     }
     printf("Socket Connection Success");
@@ -99,8 +113,8 @@ void initSocket() {
     listener = thread_create(listenData);
     /********************* THIS IS FOR CLIENT *********************/
     struct hostent *serverStruct;
-    int netSocket;
-    netSocket = socket(AF_INET, SOCK_STREAM, 0);
+    int clientSocket;
+    clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8001);
@@ -108,7 +122,7 @@ void initSocket() {
     serverStruct = gethostbyname("192.168.125.1");
     bcopy((char *)serverStruct->h_addr, (char *)&server_addr.sin_addr.s_addr, serverStruct->h_length); // copy string bytes from h_addr to s_addr
 
-    if (connect(netSocket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) < 0) {
+    if (connect(clientSocket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) < 0) {
         printf("Connection failed.\n");
     } else {
     	printf("Connected Successful.\n");
@@ -116,19 +130,12 @@ void initSocket() {
     
 }
 
-void listenSocket()
-{
-    /*********************THIS IS FOR HOST*********************/
-    listen(netSocket, 5);
-    if ((client_fd = accept(socket_fd, (struct sockaddr *)&dest, &size)) == -1) {
-        printf("connection accept fail");
+void sendData(int data) {
+    int packet = send(clientSocket, (int *) data, 999, 0);
+    if (packet == -1) {
+        printf("sending data failed");
     }
-    
-    //start data listening thread
-    thread_start(listenerThread);
-
 }
-
 int main() {
     printf("Hello World!\n");
 
